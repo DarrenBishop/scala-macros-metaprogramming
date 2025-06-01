@@ -44,7 +44,8 @@ lazy val `scala-macros-metaprogramming` = (project in file("."))
   )
   .aggregate(
     common,
-    `m1-warmup`
+    `m1-warmup`,
+    `m2-inlines`
   )
 
 lazy val common = project
@@ -59,4 +60,7 @@ lazy val common = project
   )
 
 lazy val `m1-warmup` = project
+  .dependsOn(common)
+
+lazy val `m2-inlines` = project
   .dependsOn(common)
