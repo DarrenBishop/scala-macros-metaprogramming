@@ -64,3 +64,9 @@ lazy val `m1-warmup` = project
 
 lazy val `m2-inlines` = project
   .dependsOn(common)
+  .settings(
+    tpolecatScalacOptions ++= Set(
+      ScalacOptions.advancedOption("print:postInlining"),
+      ScalacOptions.advancedOption("max-inlines:100000")
+    )
+  )
