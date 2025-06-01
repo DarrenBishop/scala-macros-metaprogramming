@@ -49,7 +49,13 @@ lazy val `scala-macros-metaprogramming` = (project in file("."))
 
 lazy val common = project
   .settings(
-    //scalacOptions ++= scalacOptionsTask.value
+    tpolecatExcludeOptions ++= Set(
+      ScalacOptions.warnUnusedParams,
+      ScalacOptions.warnUnusedImplicits
+    ),
+    tpolecatScalacOptions ++= Set(
+      ScalacOptions.warnUnusedExplicits
+    )
   )
 
 lazy val `m1-warmup` = project

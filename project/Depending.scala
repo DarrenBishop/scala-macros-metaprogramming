@@ -1,7 +1,10 @@
 import io.github.davidgregory084 as tpcat
-import sbt.*
+import sbt.{Def, *}
 import sbt.Keys.*
 import sbt.plugins.JvmPlugin
+
+import scala.Ordering.Implicits.*
+import scala.language.implicitConversions
 
 object Depending extends AutoPlugin {
 
@@ -15,32 +18,43 @@ object Depending extends AutoPlugin {
     type ScalaVersion = tpcat.ScalaVersion
     val ScalaVersion: tpcat.ScalaVersion.type = tpcat.ScalaVersion
 
-    val V2_11_0: ScalaVersion  = ScalaVersion(2, 11, 0)
+    val V2_11_0: ScalaVersion = ScalaVersion(2, 11, 0)
     val V2_11_11: ScalaVersion = ScalaVersion(2, 11, 11)
-    val V2_12_0: ScalaVersion  = ScalaVersion(2, 12, 0)
-    val V2_12_2: ScalaVersion  = ScalaVersion(2, 12, 2)
-    val V2_12_5: ScalaVersion  = ScalaVersion(2, 12, 5)
-    val V2_13_0: ScalaVersion  = ScalaVersion(2, 13, 0)
-    val V2_13_2: ScalaVersion  = ScalaVersion(2, 13, 2)
-    val V2_13_3: ScalaVersion  = ScalaVersion(2, 13, 3)
-    val V2_13_4: ScalaVersion  = ScalaVersion(2, 13, 4)
-    val V2_13_5: ScalaVersion  = ScalaVersion(2, 13, 5)
-    val V2_13_6: ScalaVersion  = ScalaVersion(2, 13, 6)
-    val V2_13_9: ScalaVersion  = ScalaVersion(2, 13, 9)
-    val V3_0_0: ScalaVersion   = ScalaVersion(3, 0, 0)
-    val V3_1_0: ScalaVersion   = ScalaVersion(3, 1, 0)
-    val V3_5_0: ScalaVersion   = ScalaVersion(3, 5, 0)
+    val V2_12_0: ScalaVersion = ScalaVersion(2, 12, 0)
+    val V2_12_2: ScalaVersion = ScalaVersion(2, 12, 2)
+    val V2_12_5: ScalaVersion = ScalaVersion(2, 12, 5)
+    val V2_13_0: ScalaVersion = ScalaVersion(2, 13, 0)
+    val V2_13_2: ScalaVersion = ScalaVersion(2, 13, 2)
+    val V2_13_3: ScalaVersion = ScalaVersion(2, 13, 3)
+    val V2_13_4: ScalaVersion = ScalaVersion(2, 13, 4)
+    val V2_13_5: ScalaVersion = ScalaVersion(2, 13, 5)
+    val V2_13_6: ScalaVersion = ScalaVersion(2, 13, 6)
+    val V2_13_9: ScalaVersion = ScalaVersion(2, 13, 9)
+    val V3_0_0: ScalaVersion = ScalaVersion(3, 0, 0)
+    val V3_1_0: ScalaVersion = ScalaVersion(3, 1, 0)
+    val V3_5_0: ScalaVersion = ScalaVersion(3, 5, 0)
+    val V3_5_1: ScalaVersion = ScalaVersion(3, 5, 1)
+    val V3_5_2: ScalaVersion = ScalaVersion(3, 5, 2)
+    val V3_6_2: ScalaVersion = ScalaVersion(3, 6, 2)
+    val V3_6_3: ScalaVersion = ScalaVersion(3, 6, 3)
+    val V3_6_4: ScalaVersion = ScalaVersion(3, 6, 4)
+    val V3_7_0: ScalaVersion = ScalaVersion(3, 7, 0)
   }
+
+  object ScalaVersions extends ScalaVersions
 
   trait AutoImport extends ScalaVersions with DependenciesBase with VersionSelector.Syntax {
 
     case object ItProject {
       def unapply(name: String): Boolean = name.endsWith("-it")
-      lazy val LogbackFile               = "logback-it.xml"
+
+      lazy val LogbackFile = "logback-it.xml"
     }
+
     case object NftProject {
       def unapply(name: String): Boolean = name.endsWith("-nft")
-      lazy val LogbackFile               = "logback-nft.xml"
+
+      lazy val LogbackFile = "logback-nft.xml"
     }
 
     lazy val logbackFile =
@@ -83,4 +97,17 @@ object Depending extends AutoPlugin {
   object autoImport extends AutoImport {
     def provide(deps: Seq[ModuleID]): Seq[ModuleID] = deps //map { _ % Provided }
   }
+
+  import autoImport.*
+
+  override def projectSettings: Seq[Def.Setting[?]] = Seq(
+    //Def.derive {
+      tpolecatScalacOptions := {
+        tpolecatScalacOptions.value - ScalacOptions.privateKindProjector ++ Set(
+          ScalacOptions.privateOption("kind-projector", _.isBetween(V3_0_0, V3_5_0)),
+          ScalacOptions.advancedOption("kind-projector", _ >= V3_5_0)
+        )
+      }
+    //}
+  )
 }
