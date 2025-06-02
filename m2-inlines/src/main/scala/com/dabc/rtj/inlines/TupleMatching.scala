@@ -3,15 +3,7 @@ package com.dabc.rtj.inlines
 import compiletime.summonInline
 
 object TupleMatching {
-  trait Show[A] {
-    def show(a: A): String
-  }
-
-  object Show {
-    given Show[String] = identity(_)
-    given Show[Int] = _.toString
-    given Show[Boolean] = _.toString
-  }
+  import types.*
 
   // given any concrete type `T`, we are going to automatically print that kind of value
   inline def showTuple[T <: Tuple](tuple: T): String = {
