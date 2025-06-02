@@ -45,7 +45,8 @@ lazy val `scala-macros-metaprogramming` = (project in file("."))
   .aggregate(
     common,
     `m1-warmup`,
-    `m2-inlines`
+    `m2-inlines`,
+    `m3-macros`
   )
 
 lazy val common = project
@@ -63,6 +64,15 @@ lazy val `m1-warmup` = project
   .dependsOn(common)
 
 lazy val `m2-inlines` = project
+  .dependsOn(common)
+  .settings(
+    tpolecatScalacOptions ++= Set(
+      ScalacOptions.advancedOption("print:postInlining"),
+      ScalacOptions.advancedOption("max-inlines:100000")
+    )
+  )
+
+lazy val `m3-macros` = project
   .dependsOn(common)
   .settings(
     tpolecatScalacOptions ++= Set(
