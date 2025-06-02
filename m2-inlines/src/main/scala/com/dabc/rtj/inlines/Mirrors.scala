@@ -8,7 +8,10 @@ import compiletime.*
 object Mirrors {
 
   // "product"
-  case class Person(name: String, age: Int, programmer: Boolean)
+  case class Person(name: String, age: Int, programmer: Boolean) derives Show
+  // compiler will look for a method `derived` in the Show companion object
+  // such that it returns a Show[Person]
+  // `derives Show` will synthesize a `given Show[Person]` in the Person companion object
 
   // "sum"
   enum Permissions {
@@ -54,43 +57,23 @@ object Mirrors {
     val allCases = constValueTuple[permissionsMirror.MirroredElemLabels] // ...all the instances of the Coproduct as strings
   }
 
-  // auto-derivation for a serialization type class
+  val masterYoda = Person("Master Yoda", 800, false)
+  val showPerson = Show.derived[Person] // explicit
+  val showPerson_v2 = summon[Show[Person]] // implicit
+  val showPerson_v3 = Person.derived$Show // explicit type-class instance, synthesized by `derives Show`
+  val masterYodaShown = showPerson.show(masterYoda)
 
-  // showTuple[(String, Int, Boolean), ("name", "age", "programmer")](("Daniel", 99, true))
-  // ["name: Daniel", "age: 99","programmer: true"]
-  inline def showTuple[E <: Tuple, L <: Tuple](elements: E): List[String] =
-    inline (elements, erasedValue[L]) match {
-      case (vs: (vth *: vtt), _: (lth *: ltt)) =>
-        val vh *: vt = vs
-        val label = constValue[lth]
-        val value = summonInline[Show[vth]].show(vh)
-        s"$label: $value" :: showTuple[vtt, ltt](vt)
-      case _ => Nil
-    }
-
-  inline def showProduct[A <: Product](using M: Mirror.ProductOf[A]): Show[A] = (a: A) => {
-    val className = constValue[M.MirroredLabel]
-    val fields = showTuple[M.MirroredElemTypes, M.MirroredElemLabels]{Tuple.fromProductTyped(a)}
-    (s"__type: $className" :: fields).mkString("{\n\t", ",\n\t", "\n}")
-  }
-
-  inline given [A <: Product: Mirror.ProductOf]: Show[A] = showProduct[A]
-
-  // reduced to one step/function... does not compile
-  //inline given [A <: Product] => (M: Mirror.ProductOf[A]) => Show[A]:
-  //  def show(a: A): String = {
-  //    val className = constValue[M.MirroredLabel]
-  //    val fields = showTuple[M.MirroredElemTypes, M.MirroredElemLabels]{Tuple.fromProductTyped(a)}
-  //    s"$className${fields.mkString("(\n\t", ",\n\t", "\n)")}"
-  //  }
-
-  def show[A](a: A)(using S: Show[A]): String = S.show(a)
+  def printThing[A](thing: A)(using Show[A]): Unit =
+    println(summon[Show[A]].show(thing))
 
   def main(args: Array[String]): Unit = {
-    val shownTuple  = showTuple[(String, Int, Boolean), ("name", "age", "programmer")](("Daniel", 99, true))
+    val shownTuple  = Show.showTuple[(String, Int, Boolean), ("name", "age", "programmer")](("Daniel", 99, true))
     println(shownTuple)
 
-    val shownPerson = show(product.daniel)
-    println(shownPerson)
+    println(product.daniel.show)
+
+    println(masterYodaShown)
+
+    printThing(masterYoda) // <-- `Sow[Person]` passed implicitly here
   }
 }
