@@ -9,7 +9,7 @@ trait DependenciesBase extends Support.Functions {
     }
 
     lazy val macroParadise_? = addCompilerPluginBefore("3")("org.scalamacros" % "paradise" % versions.macroParadise cross CrossVersion.full)
-    lazy val kindProjector_? = addCompilerPluginBefore("3")("org.typelevel" % "kind-projector" % versions.kindProjector cross CrossVersion.full)
+    lazy val kindProjector_?    = addCompilerPluginBefore("3")("org.typelevel" % "kind-projector" % versions.kindProjector cross CrossVersion.full)
   }
 
   object Typelevel {
