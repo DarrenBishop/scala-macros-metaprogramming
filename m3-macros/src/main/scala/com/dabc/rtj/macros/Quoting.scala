@@ -1,7 +1,8 @@
 package com.dabc.rtj.macros
 
+import quoted.*
+
 object Quoting {
-  import quoted.*
 
   // part 1 - the macro declaration
   inline def runPlayground(string: String) =
