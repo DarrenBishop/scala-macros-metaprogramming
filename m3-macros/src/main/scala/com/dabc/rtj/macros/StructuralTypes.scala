@@ -25,7 +25,7 @@ object StructuralTypes {
     transparent inline def make(inline fields: (String, Any)*): Record =
       ${ makeImpl('fields) }
 
-    def makeImpl(fields: Expr[Seq[(String, Any)]])(using Quotes): Expr[Record] = {
+    private def makeImpl(fields: Expr[Seq[(String, Any)]])(using Quotes): Expr[Record] = {
       import quotes.reflect.*
 
       val parentType = TypeRepr.of[Record]
