@@ -78,6 +78,8 @@ trait PkgSyntax {
     //inline def map[B](f: A ?=> B)(using Functor[F]): F[B] = mapU(f)
     def flatMapU[B](f: A ?=> F[B])(using F: FlatMap[F]): F[B] = F.flatMap(fa)(_.use(f))
     //inline def flatMap[B](f: A ?=> F[B])(using FlatMap[F]): F[B] = flatMapU(f)
+
+  def div(): Unit = println("========================================================")
 }
 
 object syntax extends PkgSyntax
