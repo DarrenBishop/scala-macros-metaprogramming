@@ -17,7 +17,7 @@ object ValDefs {
       parent = Symbol.spliceOwner, // synthesize new symbols within this parent (in this case, the macro is the owner)
       name = "myValue", // the name of the new val
       tpe = TypeRepr.of[Int], // type representation
-      flags = Flags.Lazy, // any flags you wante (e.g. lazy, inline, private, ...)
+      flags = Flags.Lazy, // any flags you wanted (e.g. lazy, inline, private, ...)
       privateWithin = Symbol.noSymbol // None for symbols
     )
 
