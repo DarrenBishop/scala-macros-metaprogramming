@@ -15,7 +15,8 @@ lazy val `scala-macros-metaprogramming` = (project in file("."))
     common,
     `m1-warmup`,
     `m2-inlines`,
-    `m3-macros`
+    `m3-macros`,
+    `p1-wartimizer`
   )
 
 lazy val common = project
@@ -28,3 +29,7 @@ lazy val `m2-inlines` = project
 
 lazy val `m3-macros` = project
   .dependsOn(common)
+
+lazy val `p1-wartimizer` = project
+  .dependsOn(common)
+
