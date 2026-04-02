@@ -45,7 +45,8 @@ object Wartimization {
      */
     def unapply(w: Expr[Wartimization])(using q: Quotes): Option[Wartimization] = {
       import q.reflect.*
-      
+      given pos: Position = w.asTerm.pos
+
       // get the name of the Wartimization instance
       val typeSymbol = w.asTerm.tpe.typeSymbol
       
@@ -54,11 +55,11 @@ object Wartimization {
         val fullName = typeSymbol.fullName // fully qualified class name of the object
         Some(unsafeLoadObject(fullName))
       } else {
-        report.errorAndAbort(s"The type [${typeSymbol.name}] does not correspond to an object")
+        report.errorAndAbort(s"The expression `${w.show}: ${typeSymbol.name}` does not correspond to a compile-time constant object", pos)
       }
     }
     
-    private def unsafeLoadObject[A](name: String)(using q: Quotes): A = {
+    private def unsafeLoadObject[A](name: String)(using q: Quotes)(using pos: q.reflect.Position): A = {
       import q.reflect.*
       
       try {
@@ -82,7 +83,8 @@ object Wartimization {
                |  - it is a top-level object (or nested in another object)
                |  - it is defined in a file separate from where this macro is being invoked
                |  - it is being referred to directly as the object rather than an alias or a val
-               |""".stripMargin)
+               |""".stripMargin,
+            pos)
       }
     }
   }
