@@ -15,12 +15,15 @@ trait DependenciesBase extends Support.Functions {
   object Typelevel {
 
     object versions {
+      lazy val cats = "2.13.0"
       lazy val refined = "0.11.3"
     }
 
-    lazy val cats = "org.typelevel" %% "cats-core" % "2.13.0"
-    lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.6.1"
-    lazy val catsTagless = "org.typelevel" %% "cats-tagless-core" % "0.16.3"
+    lazy val cats = "org.typelevel" %% "cats-core" % versions.cats
+    lazy val alleycats = "org.typelevel" %% "alleycats-core" % versions.cats
+    lazy val mouse = "org.typelevel" %% "mouse" % "1.4.0"
+    lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
+    lazy val catsTagless = "org.typelevel" %% "cats-tagless-core" % "0.16.5"
     lazy val simulacrum = "org.typelevel" %% "simulacrum" % "1.0.2-SNAPSHOT"
     lazy val refined = "eu.timepit" %% "refined" % versions.refined
   }

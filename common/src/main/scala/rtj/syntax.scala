@@ -17,6 +17,9 @@ trait PkgSyntax {
     def name: String = err.getClass.getName
     def msg: String = err.getMessage
 
+  extension [K, V] (kv: Map[K, V])
+    def apply(key: K, default: => V): V = kv.getOrElse(key, default)
+
   def !!![T]: T = ???
   def !??[T] (msg: String): Throwable = new RuntimeException(msg)
   def !!?[T] (msg: String): T = throw !??(msg)

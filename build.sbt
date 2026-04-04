@@ -7,7 +7,11 @@ ThisBuild / fork := true
 ThisBuild / libraryDependencies ++= Seq(
   Typelevel.cats,
   Typelevel.catsEffect,
+  Typelevel.alleycats,
+  Typelevel.mouse,
   Typelevel.refined,
+
+  Testing.scalatest
 )
 
 lazy val `scala-macros-metaprogramming` = (project in file("."))
@@ -16,7 +20,8 @@ lazy val `scala-macros-metaprogramming` = (project in file("."))
     `m1-warmup`,
     `m2-inlines`,
     `m3-macros`,
-    `p1-wartimizer`
+    `p1-wartimizer`,
+    `p2-type-safe-jdbc`
   )
 
 lazy val common = project
@@ -33,3 +38,5 @@ lazy val `m3-macros` = project
 lazy val `p1-wartimizer` = project
   .dependsOn(common)
 
+lazy val `p2-type-safe-jdbc` = project
+  .dependsOn(common)
