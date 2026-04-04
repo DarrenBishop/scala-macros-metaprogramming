@@ -1,6 +1,8 @@
-package com.dabc.rtj.wartimizer
+package com.dabc.rtj
+package wartimizer
 
 import quoted.*
+import macros.*
 
 /**
  * Given
@@ -24,103 +26,84 @@ import quoted.*
  */
 object CopyChain extends Wartimization {
 
-  //case class Args (q: Quotes) extends AnyVal {
-  //  import q.reflect.*
-  //  def unapply(term: Term): Option[(Term, List[Term], List[List[Term]])] = {
-  //
-  //    None
-  //  }
-  //}
-
   extension [K, V] (kv: Map[K, V])
     def apply(key: K, default: => V): V = kv.getOrElse(key, default)
 
-  object Args {
-    //inline def apply(using Quotes): Args = new Args(quotes)
+  private def resolveArguments(using Quotes)(args: List[qr.Term], vals: List[qr.Statement]): List[qr.Term] = {
+    import qr.*
 
-    private def resolveArguments[Q <: Quotes](using q: Quotes)(args: List[q.reflect.Term], vals: List[q.reflect.Statement]): List[q.reflect.Term] = {
-      import quotes.reflect.*
+    // map[value name, value expression]
+    val expressions: Map[String, Term] = vals.collect {
+      case ValDef(name, _, Some(expression)) => name -> expression
+    }.toMap
 
-      // map[value name, value expression]
-      val expressions: Map[String, Term] = vals.collect {
-        case ValDef(name, _, Some(expression)) => name -> expression
-      }.toMap
-
-      args.map {
-        case Ident(name) if expressions.contains(name) => expressions(name)
-        // age = some intermediate value
-        case NamedArg(argName, term @ Ident(termName)) => NamedArg(argName, expressions(termName, term))
-        // anything else is left intact
-        case term => term
-      }
-    }
-
-    def unapply[Q <: Quotes](using q: Quotes)(term: q.reflect.Term): Option[(q.reflect.Term, List[q.reflect.Term], List[List[q.reflect.Term]])] = {
-      import quotes.reflect.*
-
-      term match {
-        // recursive: chain.copy(args)
-        case Block(
-          ValDef(localVal, _, Some(Args(target, targetArgs, chainArgs))) // final target of the copy call; computed recursively
-            :: intermediateVals, // local value definitions, maybe used in the last copy call
-          Apply(Select(Ident(finalTarget), "copy"), args)
-        ) if localVal == finalTarget =>
-          val localArgs = resolveArguments(args, intermediateVals)
-          Some((target, targetArgs, chainArgs :+ localArgs))
-
-        // chain copy: target.copy(args).copy(args2)
-        case Block(intermediateVals, Apply(Select(target, "copy"), targetArgs)) =>
-          Some(target, resolveArguments(targetArgs, intermediateVals), List())
-
-        // simple copy case: target.copy(arguments)
-        case Apply(Select(target, "copy"), targetArgs) =>
-          // no copy chain
-          Some((target, targetArgs, List()))
-
-        // base case
-        case _ => None
-      }
+    args.map {
+      case Ident(name) if expressions.contains(name) => expressions(name)
+      // age = some intermediate value
+      case NamedArg(argName, term @ Ident(termName)) => NamedArg(argName, expressions(termName, term))
+      // anything else is left intact
+      case term => term
     }
   }
 
-  def treeMap(using q: Quotes): q.reflect.TreeMap = {
-    import quotes.reflect.*
+  private def unapply(using Quotes)(term: qr.Term): Option[(qr.Term, List[qr.Term], List[List[qr.Term]])] = {
+    import qr.*
 
-    def isDefaultCopy(term: Term): Boolean =
-      term.symbol.flags.is(Flags.Synthetic) && term.symbol.name.contains("copy$default$")
+    term match {
+      // recursive: chain.copy(args)
+      case Block(
+        ValDef(localVal, _, Some(CopyChain(target, targetArgs, chainArgs))) // final target of the copy call; computed recursively
+          :: intermediateVals, // local value definitions, maybe used in the last copy call
+        Apply(Select(Ident(finalTarget), "copy"), args)
+      ) if localVal == finalTarget =>
+        val localArgs = resolveArguments(args, intermediateVals)
+        Some((target, targetArgs, chainArgs :+ localArgs))
 
-    def nonDefaultCopy(term: Term): Boolean = !isDefaultCopy(term)
+      // chain copy: target.copy(args).copy(args2)
+      case Block(intermediateVals, Apply(Select(target, "copy"), targetArgs)) =>
+        Some(target, resolveArguments(targetArgs, intermediateVals), List())
 
-    def extracLatestArgs(target: List[Term], chain: List[List[Term]]): List[Term] = {
+      // simple copy case: target.copy(arguments)
+      case Apply(Select(target, "copy"), targetArgs) =>
+        // no copy chain
+        Some((target, targetArgs, List()))
+
+      // base case
+      case _ => None
+    }
+  }
+
+  private def nonDefaultCopy(using Quotes)(term: qr.Term): Boolean =
+    !term.symbol.flags.is(qr.Flags.Synthetic) || !term.symbol.name.contains("copy$default$")
+
+  private def extractLatestArgs(using Quotes)(target: List[qr.Term], chain: List[List[qr.Term]]): List[qr.Term] = {
       target.zip(chain.transpose) // List[(Term, List[Term])]
         .map { (t, cs) => cs.findLast(nonDefaultCopy).getOrElse(t) }
     }
 
-    // TODO: move to Args; rename Args to something that reflects its role
-    def getCopyMethod(target: Term): Symbol = {
-      target.symbol
-        .methodMember("copy")
-        .headOption
-        // this should NEVER happen
-        .getOrElse { report.errorAndAbort(s"The impossible happened; there is no copy method on ${target.symbol.name}", target.pos) }
-    }
+  private def getCopyMethod(using Quotes)(target: qr.Term): qr.Symbol = {
+    target.symbol
+      .methodMember("copy")
+      .headOption
+      // this should NEVER happen
+      .getOrElse { qr.report.errorAndAbort(s"The impossible happened; there is no copy method on ${target.symbol.name}", target.pos) }
+  }
 
-    new TreeMap {
-      override def transformTerm(tree: Term)(owner: Symbol): Term = {
-        tree match {
-            // figure out the latest args to apply to the final copy method
-          case Args(target, targetArgs, chainArgs) =>
-            val args = extracLatestArgs(targetArgs, chainArgs)
+  def treeMap(using Quotes): qr.TreeMap = new qr.TreeMap {
+    override def transformTerm(tree: qr.Term)(owner: qr.Symbol): qr.Term = {
+      tree match {
+          // figure out the latest args to apply to the final copy method
+        case CopyChain(target, targetArgs, chainArgs) =>
+          val args = extractLatestArgs(targetArgs, chainArgs)
 
-            // find the copy method to invoke
-            val copyMethod = getCopyMethod(target)
+          // find the copy method to invoke
+          val copyMethod = getCopyMethod(target)
 
-            // invoke the copy method on those args
-            target.select(copyMethod).appliedToArgs(args).changeOwner(owner)
+          // invoke the copy method on those args
+          target.select(copyMethod).appliedToArgs(args).changeOwner(owner)
 
-          // base case
-          case _ => super.transformTerm(tree)(owner)
-        }
+        // base case
+        case _ => super.transformTerm(tree)(owner)
       }
     }
   }

@@ -62,12 +62,12 @@ object CopyChainUsage {
     )
   */
 
-  //val danielCopy_v2 = wartimize(CopyChain) {
-  //  daniel
-  //    .copy(name = "danielciocirlan")
-  //    .copy(age = 102)
-  //    .copy(favLanguage = "Scala 3", gamer = true)
-  //}
+  val danielCopy_v2 = wartimize(CopyChain) {
+    daniel
+      .copy(name = "danielciocirlan")
+      .copy(age = 102)
+      .copy(favLanguage = "Scala 3", gamer = true)
+  }
 
   val danielCopy_v3 = wartimize(CopyChain) {
     val d2 = daniel
