@@ -32,12 +32,54 @@ object CopyChain extends Wartimization {
   //  }
   //}
 
+  extension [K, V] (kv: Map[K, V])
+    def apply(key: K, default: => V): V = kv.getOrElse(key, default)
+
   object Args {
     //inline def apply(using Quotes): Args = new Args(quotes)
 
-    def unapply[Q <: Quotes](using q: Quotes)(term: q.reflect.Term): Option[(q.reflect.Term, List[q.reflect.Term], List[List[q.reflect.Term]])] = {
+    private def resolveArguments[Q <: Quotes](using q: Quotes)(args: List[q.reflect.Term], vals: List[q.reflect.Statement]): List[q.reflect.Term] = {
+      import quotes.reflect.*
 
-      None
+      // map[value name, value expression]
+      val expressions: Map[String, Term] = vals.collect {
+        case ValDef(name, _, Some(expression)) => name -> expression
+      }.toMap
+
+      args.map {
+        case Ident(name) if expressions.contains(name) => expressions(name)
+        // age = some intermediate value
+        case NamedArg(argName, term @ Ident(termName)) => NamedArg(argName, expressions(termName, term))
+        // anything else is left intact
+        case term => term
+      }
+    }
+
+    def unapply[Q <: Quotes](using q: Quotes)(term: q.reflect.Term): Option[(q.reflect.Term, List[q.reflect.Term], List[List[q.reflect.Term]])] = {
+      import quotes.reflect.*
+
+      term match {
+        // recursive: chain.copy(args)
+        case Block(
+          ValDef(localVal, _, Some(Args(target, targetArgs, chainArgs))) // final target of the copy call; computed recursively
+            :: intermediateVals, // local value definitions, maybe used in the last copy call
+          Apply(Select(Ident(finalTarget), "copy"), args)
+        ) if localVal == finalTarget =>
+          val localArgs = resolveArguments(args, intermediateVals)
+          Some((target, targetArgs, chainArgs :+ localArgs))
+
+        // chain copy: target.copy(args).copy(args2)
+        case Block(intermediateVals, Apply(Select(target, "copy"), targetArgs)) =>
+          Some(target, resolveArguments(targetArgs, intermediateVals), List())
+
+        // simple copy case: target.copy(arguments)
+        case Apply(Select(target, "copy"), targetArgs) =>
+          // no copy chain
+          Some((target, targetArgs, List()))
+
+        // base case
+        case _ => None
+      }
     }
   }
 

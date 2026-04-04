@@ -1,6 +1,8 @@
 package com.dabc.rtj.wartimizer
 package usage
 
+import Wartimizer.wartimize
+
 object CopyChainUsage {
 
   case class Person(name: String, age: Int, favLanguage: String, gamer: Boolean)
@@ -59,4 +61,19 @@ object CopyChainUsage {
       )
     )
   */
+
+  //val danielCopy_v2 = wartimize(CopyChain) {
+  //  daniel
+  //    .copy(name = "danielciocirlan")
+  //    .copy(age = 102)
+  //    .copy(favLanguage = "Scala 3", gamer = true)
+  //}
+
+  val danielCopy_v3 = wartimize(CopyChain) {
+    val d2 = daniel
+      .copy(name = "danielciocirlan")
+      .copy(age = 102)
+      .copy(favLanguage = "Kotlin", gamer = true)
+    d2.copy(favLanguage = "Scala 3")
+  }
 }
