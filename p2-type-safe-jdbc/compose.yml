@@ -1,0 +1,19 @@
+x-network-name: &network-name ${COMPOSE_PROJECT_NAME}.dc
+
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - "./src/test/resources/sql:/docker-entrypoint-initdb.d"
+    environment:
+      VIRTUAL_DOMAIN: *network-name
+      VIRTUAL_PORT: 5432
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+    ports:
+      - "5432:5432"
+
+networks:
+  default:
+    name: *network-name

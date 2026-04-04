@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0"
 
-ThisBuild / scalaVersion := "3.7.1"
+ThisBuild / scalaVersion := "3.8.3"
 
 ThisBuild / fork := true
 
@@ -40,3 +40,6 @@ lazy val `p1-wartimizer` = project
 
 lazy val `p2-type-safe-jdbc` = project
   .dependsOn(common)
+  .settings(
+    libraryDependencies += Data.postgres
+  )

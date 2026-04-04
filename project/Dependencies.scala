@@ -78,6 +78,10 @@ trait DependenciesBase extends Support.Functions {
     lazy val mockitoScalatest = "org.mockito" %% "mockito-scala-scalatest" % versions.mockito % Test
   }
 
+  object Data {
+    lazy val postgres = "org.postgresql" % "postgresql" % "42.7.10"
+  }
+
   object Versions {
     val adept = "2.51.0"
 
