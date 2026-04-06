@@ -46,6 +46,7 @@ object CopyChain extends Wartimization {
     }
   }
 
+  // https://docs.scala-lang.org/scala3/reference/changed-features/pattern-matching.html#extractors
   private def unapply(using Quotes)(term: qr.Term): Option[(qr.Term, List[qr.Term], List[List[qr.Term]])] = {
     import qr.*
 

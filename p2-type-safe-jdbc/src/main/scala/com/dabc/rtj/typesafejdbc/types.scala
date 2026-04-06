@@ -2,31 +2,46 @@ package com.dabc.rtj
 package typesafejdbc
 
 object JDBC {
+  sealed trait Descriptor
 
-  opaque type Descriptor = Any
-  sealed trait DescriptorC[U] { self: Singleton =>
+  sealed trait DescriptorC[U <: AnyKind] extends Descriptor { //self: Singleton =>
     type Underlying = U
     given this.type = this
   }
 
-  opaque type Type <: Descriptor = Descriptor
-  sealed trait TypeC[U] extends DescriptorC[U]
+  sealed trait Type extends Descriptor
+  sealed trait TypeC[U <: AnyKind] extends Type, DescriptorC[U]
 
-  opaque type String <: Type = String.Underlying
   case object String extends TypeC[Predef.String]
+  opaque type String <: Type = String.type
 
-  opaque type Integer <: Type = Integer.Underlying
-  case object Integer extends TypeC[Int]
+  case object VarChar extends TypeC[Predef.String]
+  opaque type VarChar <: Type = VarChar.type
 
-  opaque type Boolean <: Type = Boolean.Underlying
+  case object Integer extends TypeC[scala.Int]
+  opaque type Integer <: Type = Integer.type
+
+  case object Double extends TypeC[scala.Double]
+  opaque type Double <: Type = Double.type
+
+  case object Float extends TypeC[scala.Float]
+  opaque type Float <: Type = Float.type
+
   case object Boolean extends TypeC[scala.Boolean]
+  opaque type Boolean <: Type = Boolean.type
 
-  opaque type Nullability <: Descriptor = Descriptor
-  sealed trait NullabilityC[U] extends DescriptorC[U]
+  case class Array[U](elem: TypeC[U]) extends TypeC[scala.Array[U]]
 
-  opaque type Nullable <: Nullability = Nullable.Underlying
+  case object NotSupported extends TypeC[Nothing]
+  opaque type NotSupported <: Type = NotSupported.type
+
+  // Nullability, essentially true or false
+  sealed trait Nullability extends Descriptor
+  sealed trait NullabilityC[U] extends Nullability, DescriptorC[U]
+
   case object Nullable extends NullabilityC[true]
+    opaque type Nullable <: Nullability = Nullable.type
 
-  opaque type NonNullable <: Nullability = NonNullable.Underlying
   case object NonNullable extends NullabilityC[false]
+  opaque type NonNullable <: Nullability = NonNullable.type
 }
