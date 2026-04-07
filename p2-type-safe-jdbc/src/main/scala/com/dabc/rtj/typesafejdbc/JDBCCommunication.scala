@@ -2,25 +2,22 @@ package com.dabc.rtj
 package typesafejdbc
 
 import java.sql.*
+import scala.util.NotGiven
 
 object JDBCCommunication {
-  def getSchema(query: Query): Schema = {
+
+  private def useConnection[R](f: Connection => R): R = {
     // load the driver
     Class.forName("org.postgresql.Driver") // necessary to load the driver during macro expansion
 
-    Using.resource(DriverManager.getConnection("jdbc:postgresql://localhost:5432/", "docker", "docker")) {
-      // Use a connection to the DB
-      conn =>
-
-      // create a PreparedStatement
-      val statement = conn.prepareStatement(query)
-
-      // get the metadata out of the PreparedStatement
-      val metadata = statement.getMetaData
-
-      // => Schema
-
-      Schema(metadata)
-    }
+    Using.resource(DriverManager.getConnection("jdbc:postgresql://localhost:5432/", "docker", "docker"))(f)
   }
+
+  //private[typesafejdbc] def withConnection[R](using C: Connection)(f: Connection => R): R = { f(C) }
+
+  private[typesafejdbc] def withConnection[R](using NotGiven[Connection])(f: Connection => R): R =
+    useConnection(f)
+
+  //private[typesafejdbc] def withConnection[R](using NotGiven[Connection])(f: Connection ?=> Connection => R): R =
+  //  withConnection(conn => f(using conn)(conn))
 }

@@ -2,46 +2,49 @@ package com.dabc.rtj
 package typesafejdbc
 
 object JDBC {
-  sealed trait Descriptor
-
-  sealed trait DescriptorC[U <: AnyKind] extends Descriptor { //self: Singleton =>
-    type Underlying = U
+  sealed trait Descriptor {
     given this.type = this
   }
 
-  sealed trait Type extends Descriptor
-  sealed trait TypeC[U <: AnyKind] extends Type, DescriptorC[U]
+  sealed trait Type extends Descriptor {
+    type Underlying
+  }
 
-  case object String extends TypeC[Predef.String]
-  opaque type String <: Type = String.type
+  sealed trait TypeC[U] extends Type, Descriptor {
+    type Underlying = U
+    given TypeC[Underlying] = this
+  }
 
   case object VarChar extends TypeC[Predef.String]
-  opaque type VarChar <: Type = VarChar.type
+  type VarChar = VarChar.type
 
   case object Integer extends TypeC[scala.Int]
-  opaque type Integer <: Type = Integer.type
+  type Integer = Integer.type
 
   case object Double extends TypeC[scala.Double]
-  opaque type Double <: Type = Double.type
+  type Double = Double.type
 
   case object Float extends TypeC[scala.Float]
-  opaque type Float <: Type = Float.type
+  type Float = Float.type
 
   case object Boolean extends TypeC[scala.Boolean]
-  opaque type Boolean <: Type = Boolean.type
+  type Boolean = Boolean.type
 
-  case class Array[U](elem: TypeC[U]) extends TypeC[scala.Array[U]]
+  sealed trait Array[T <: Type] extends TypeC[?]
+  case object Array {
+    case class Array[T <: Type, U] private[JDBC] (t: T) extends JDBC.Array[T], TypeC[scala.Array[U]]
+    given apply[T <: Type](using T: T): JDBC.Array[T] = new Array[T, T.Underlying](T)
+  }
 
   case object NotSupported extends TypeC[Nothing]
-  opaque type NotSupported <: Type = NotSupported.type
+  type NotSupported = NotSupported.type
 
   // Nullability, essentially true or false
   sealed trait Nullability extends Descriptor
-  sealed trait NullabilityC[U] extends Nullability, DescriptorC[U]
 
-  case object Nullable extends NullabilityC[true]
-    opaque type Nullable <: Nullability = Nullable.type
+  case object Nullable extends Nullability
+  type Nullable = Nullable.type
 
-  case object NonNullable extends NullabilityC[false]
-  opaque type NonNullable <: Nullability = NonNullable.type
+  case object NonNullable extends Nullability
+  type NonNullable = NonNullable.type
 }

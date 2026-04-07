@@ -1,9 +1,13 @@
 package com.dabc.rtj
 package typesafejdbc
 
-import cats.Show
+import cats.{Foldable, Functor, Show}
+import cats.syntax.all.*
+import alleycats.std.iterable.alleycatsStdIterableTraverse
 
 import java.sql.{ResultSetMetaData, Types}
+import scala.reflect.ClassTag
+import scala.util.NotGiven
 
 case class Column(
   index: Int,
@@ -12,16 +16,43 @@ case class Column(
   jdbcNullability: JDBC.Nullability
 )
 
+case class Row(data: Map[String, Any])
+
+object Row {
+  import scala.compiletime.summonFrom
+
+  inline given [T] => Show[T] = summonFrom {
+    case ev: Show[T] => ev
+    case _ => Show.fromToString
+  }
+
+  given [E: Show] => Show[Array[E]] = _.map(_.show).mkString(", ")
+
+  given [E: Show, C[_]: {Functor, Foldable}] => Show[C[E]] = _.map(_.show).intercalate(", ")
+
+  given Show[Row] = { row =>
+    StringBuilder().peek { sb =>
+      sb.append("Printing Rows:\n")
+      row.data.foreach {
+        case (k, vs: Array[e]) => sb.append(show"\t$k: $vs\n")
+        case (k, vs: List[e]) => sb.append(show"\t$k: $vs\n")
+        case (k, v) => sb.append(show"\t$k: $v\n")
+      }
+    }
+    .mkString
+  }
+}
+
 case class Schema(columns: List[Column])
 
 object Schema {
-  given Show[Schema]:
-    def show(t: Schema): String =
-      t.columns
+  given Show[Schema] = { schema =>
+      schema.columns
         .foldLeft(StringBuilder().append("Printing Schema:\n")) {
           (sb, c) => sb.append(s"\t$c\n")
         }
         .mkString
+  }
 
 
   //case object Name {
@@ -38,9 +69,9 @@ object Schema {
       case Types.BOOLEAN => JDBC.Boolean
       case Types.ARRAY =>
         md.getColumnTypeName(index) match {
-          case n if n.contains("varchar") => JDBC.Array(JDBC.VarChar)
-          case n if n.contains("character") => JDBC.Array(JDBC.VarChar)
-          case n if n.contains("integer") => JDBC.Array(JDBC.Integer)
+          case n if n.contains("varchar") => JDBC.Array[JDBC.VarChar]
+          case n if n.contains("character") => JDBC.Array[JDBC.VarChar]
+          case n if n.contains("integer") => JDBC.Array[JDBC.Integer]
           // FIXME: add all other cases if you want this library production-ready
           case name =>
             println(s"Could not infer array type for $name!")
@@ -53,8 +84,6 @@ object Schema {
       case _ => JDBC.Nullable
     }
 
-  def apply(metadata: ResultSetMetaData): Schema = fromMetaData(metadata)
-
   def fromMetaData(metadata: ResultSetMetaData): Schema = {
     val descriptors = for {
       index <- (1 to  metadata.getColumnCount).toList
@@ -64,5 +93,22 @@ object Schema {
     } yield Column(index, name, jdbcType, nullable)
 
     Schema(descriptors)
+  }
+
+  def apply(metadata: ResultSetMetaData): Schema = fromMetaData(metadata)
+
+  def apply(query: String): Schema = JDBCCommunication.withConnection {
+    // Use a connection to the DB
+    conn =>
+
+    // create a PreparedStatement
+    val statement = conn.prepareStatement(query)
+
+    // get the metadata out of the PreparedStatement
+    val metadata = statement.getMetaData
+
+    // => Schema
+
+    Schema(metadata)
   }
 }
