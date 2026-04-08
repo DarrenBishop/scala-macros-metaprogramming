@@ -30,10 +30,14 @@ object JDBC {
   case object Boolean extends TypeC[scala.Boolean]
   type Boolean = Boolean.type
 
-  sealed trait Array[T <: Type] extends TypeC[?]
+  sealed trait Array[T <: Type] extends TypeC[?] {
+    type Elem = T
+    val t: Elem
+  }
   case object Array {
     case class Array[T <: Type, U] private[JDBC] (t: T) extends JDBC.Array[T], TypeC[scala.Array[U]]
     given apply[T <: Type](using T: T): JDBC.Array[T] = new Array[T, T.Underlying](T)
+    def unapply[T <: Type](array: Array[T, ?]): Option[T] = Some(array.t)
   }
 
   case object NotSupported extends TypeC[Nothing]

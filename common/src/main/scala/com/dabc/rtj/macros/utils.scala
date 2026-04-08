@@ -19,7 +19,7 @@ private[macros] def tpe[T: Type](using Quotes): String = Type.show[T]
  *  }
  *  ```
  */
-transparent inline def reflects(using q: Quotes) = q.reflect
-transparent inline def qr(using Quotes) = reflects
+transparent inline def reflects(using q: Quotes): q.reflectModule = q.reflect
+transparent inline def qr(using q: Quotes): q.reflectModule = reflects
 
-transparent inline def reports(using Quotes) = reflects.report
+transparent inline def reports(using q: Quotes): q.reflect.reportModule = q.reflect.report

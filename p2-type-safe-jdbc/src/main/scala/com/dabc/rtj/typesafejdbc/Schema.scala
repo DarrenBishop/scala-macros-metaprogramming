@@ -1,20 +1,13 @@
 package com.dabc.rtj
 package typesafejdbc
 
-import cats.Show
-
 import java.sql.{ResultSetMetaData, Types}
 
 case class Schema(columns: List[Column])
 
 object Schema {
-  given Show[Schema] = { schema =>
-      schema.columns
-        .foldLeft(StringBuilder().append("Printing Schema:\n")) {
-          (sb, c) => sb.append(s"\t$c\n")
-        }
-        .mkString
-  }
+
+  given Show[Schema] = { schema => s"schema:\n${schema.columns.fmtF("\t")}" }
 
   //case object Name {
   //  inline def unapply(name: String): Boolean = name.startsWith(prefix)
@@ -30,9 +23,12 @@ object Schema {
       case Types.BOOLEAN => JDBC.Boolean
       case Types.ARRAY =>
         md.getColumnTypeName(index) match {
-          case n if n.contains("varchar") => JDBC.Array[JDBC.VarChar]
-          case n if n.contains("character") => JDBC.Array[JDBC.VarChar]
-          case n if n.contains("integer") => JDBC.Array[JDBC.Integer]
+          case s"${_}varchar${_}" => JDBC.Array[JDBC.VarChar]
+          //case n if n.contains("varchar") => JDBC.Array[JDBC.VarChar]
+          case s"${_}character${_}" => JDBC.Array[JDBC.VarChar]
+          //case n if n.contains("character") => JDBC.Array[JDBC.VarChar]
+          case s"${_}integer${_}" => JDBC.Array[JDBC.Integer]
+          //case n if n.contains("integer") => JDBC.Array[JDBC.Integer]
           // FIXME: add all other cases if you want this library production-ready
           case name =>
             println(s"Could not infer array type for $name!")

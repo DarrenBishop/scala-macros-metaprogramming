@@ -19,7 +19,7 @@ object ColumnMapping {
     type Result = R
   }
 
-  def apply[T <: Type, N <: Nullability, C <: String](using ev: ColumnMapping[T, N, C]): ev.type = ev
+  def apply[T <: Type, N <: Nullability, C <: String, R](using ev: Aux[T, N, C, R]): ev.type = ev
 
   //given [C <: String]: ColumnMapping[VarChar, NonNullable, C] with {
   //  type Result = String

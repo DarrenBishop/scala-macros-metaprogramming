@@ -1,23 +1,11 @@
 package com.dabc.rtj
 package typesafejdbc
 
-import cats.{Foldable, Functor, Show}
-import cats.syntax.all.*
+import cats.syntax.show.*
 
 case class Row(data: Map[String, Any])
 
 object Row {
-
-  import scala.compiletime.summonFrom
-
-  inline given [T] => Show[T] = summonFrom {
-    case ev: Show[T] => ev
-    case _ => Show.fromToString
-  }
-
-  given [E: Show] => Show[Array[E]] = _.map(_.show).mkString(", ")
-
-  given [E: Show, C[_] : {Functor, Foldable}] => Show[C[E]] = _.map(_.show).intercalate(", ")
 
   given Show[Row] = { row =>
     StringBuilder().peek { sb =>
